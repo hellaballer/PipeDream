@@ -11,8 +11,8 @@ public class Main {
 
 	public static void main(String[] args) {
 		System.out.println("Hello");
-		int numThreads = 2;
-		Mapper<Integer, String > m = new Mapper<>(numThreads);
+		int numThreads = 5;
+		Mapper<Integer, Integer > m = new Mapper<>(numThreads);
 
 		List<Integer> inputs = new ArrayList<>(numThreads);
 		for (int i = 0; i < numThreads; i++) {
@@ -23,7 +23,7 @@ public class Main {
 
 		m.setInputs(inputs);
 
-		m.runMap(e -> String.valueOf(e) + "foo");
+		m.runMap(e -> e * 2);
 
 		System.out.println("Out: " + m.getOutputs());
 
