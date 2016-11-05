@@ -15,9 +15,11 @@ public class Main {
 	static Function <String, List<File>> fileShard = e -> {
 		File[] files =  new File(e).listFiles();
 		ArrayList<File> fileList = new ArrayList<File>();
-		for (File f: files)
-			if(f.toString().endsWith(".mp4"))
+		for (File f: files){
+			if(f.toString().endsWith(".mp4")){
 				fileList.add(f);
+			}
+		}
 		return fileList;	
 	};
 	
