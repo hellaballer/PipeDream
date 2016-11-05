@@ -47,6 +47,22 @@ public class FFMPegWrapper {
 		}
 	}
 
+	public static void segmentVideo(File video, int numSegments) {
+		// ffmpeg -i f -c copy -map 0 -segment_time 8 -f segment output%03d.mp4
+		Process p;
+		try {
+			String command = "ffmpeg -i " + video.getAbsolutePath() + " -c copy -map 0 -segment_time " + numSegments
+					+ " -f segment " + video.getParent() + "/split/output%03d.mp4";
+			System.out.println(command);
+			p = Runtime.getRuntime().exec(command);
+			p.waitFor();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public static File concatVideos(List<File> videos, String outputString) {
 		// ffmpeg -i "concat:output.mp4|output2.mp4" -c copy concat.mp4
 		StringJoiner sj = new StringJoiner("|");
