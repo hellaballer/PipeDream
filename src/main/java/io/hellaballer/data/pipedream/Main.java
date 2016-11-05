@@ -13,30 +13,25 @@ public class Main {
 	public static void main(String[] args) {
 		System.out.println("Starting...");
 
-		Sharder<Integer, Integer> sharder = new Sharder<Integer, Integer>(500);
+		Sharder<Double, Double> sharder = new Sharder<>(500.0);
 
 		sharder.runShard(e -> Arrays.asList(e / 3, e / 3, e / 3));
 
-		List<Integer> out = sharder.getOutputs();
+		List<Double> out = sharder.getOutputs();
 		sharder.destroy();
-		
+
 		System.out.println("Output: " + out);
 
-		int numThreads = 5;
-		Mapper<Integer, Integer> m = new Mapper<>(numThreads);
+		int numThreads = out.size();
+		Mapper<Double, Double> m = new Mapper<>(numThreads);
 
-		List<Integer> inputs = new ArrayList<>(numThreads);
-		for (int i = 0; i < numThreads; i++) {
-			inputs.add(i + 1);
-		}
+		System.out.println("In:  " + out);
 
-		System.out.println("In:  " + inputs);
-
-		m.setInputs(inputs);
+		m.setInputs(out);
 
 		m.runMap(e -> e * 2);
 
-		Reducer<Integer> r = new Reducer<>(numThreads);
+		Reducer<Double> r = new Reducer<>(numThreads);
 
 		r.setInputs(m.getOutputs());
 
@@ -47,6 +42,7 @@ public class Main {
 		System.out.println("FINAL VAL " + r.getOutput());
 		r.destory();
 
-//		FFMPegWrapper.convertVideosToAudio(new File("/home/kyle/Documents/ObamaData/A_Bold_New_Course_for_NASA.mp4"));
+		// FFMPegWrapper.convertVideosToAudio(new
+		// File("/home/kyle/Documents/ObamaData/A_Bold_New_Course_for_NASA.mp4"));
 	}
 }
