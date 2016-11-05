@@ -7,9 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,18 +32,17 @@ public class Main {
 		}
 		return fileList;
 	};
-	
-	public static void storeTimes(String pathName, Map<String, List<Time>> timeMap){
+
+	public static void storeTimes(String pathName, Map<String, List<Time>> timeMap) {
 		Path path = Paths.get(pathName);
 		try (BufferedWriter writer = Files.newBufferedWriter(path)) {
-			for(Map.Entry<String, List<Time>> entry: timeMap.entrySet()){
+			for (Map.Entry<String, List<Time>> entry : timeMap.entrySet()) {
 				writer.write(entry.getKey() + ":\n");
-				for(Time t: entry.getValue()){
+				for (Time t : entry.getValue()) {
 					writer.write("\t(" + t.getStart() + ", " + t.getEnd() + ") -" + t.getVideo() + "\n");
 				}
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -67,7 +63,8 @@ public class Main {
 	};
 
 	public static void main(String[] args) {
-		args = new String[] { "/home/kyle/Documents/ObamaData/test/", "/home/kyle/Documents/ObamaData/output/" };
+		args = new String[] { "/home/kyle/Documents/ObamaData/test/",
+				"/home/kyle/Documents/ObamaData/output/output.txt" };
 
 		if (args.length < 2) {
 			System.out.println("Need input folder and output folder");
@@ -77,6 +74,7 @@ public class Main {
 		System.out.println("Starting...");
 
 		String videoDir = args[0];
+		String outputFile = args[1];
 
 		// FFMPegWrapper.concatVideos(
 		// Arrays.asList(new
@@ -85,16 +83,17 @@ public class Main {
 		// "/home/kyle/Documents/ObamaData/test/out.mp4");
 		//
 		// System.out.println("concat");
-		
-		FFMPegWrapper.cutVideo(new Time(new File(videoDir + "outputLonger.mp4"), 0, 2), "outputPath.mp4");
-		System.out.println("Done");
+
+		// FFMPegWrapper.cutVideo(new Time(new File(videoDir +
+		// "outputLonger.mp4"), 0, 2), "outputPath.mp4");
+		// System.out.println("Done");
 
 		Sharder<String, File> shard = new Sharder<>(videoDir);
 
 		shard.runShard(fileShard);
 
 		List<File> files = shard.getOutputs();
-
+		System.out.println(files);
 		shard.destroy();
 
 		Mapper<File, Map<String, List<Time>>> map = new Mapper<>(files.size());
@@ -103,42 +102,15 @@ public class Main {
 		List<Map<String, List<Time>>> mapedFiles = map.getOutputs();
 		map.destroy();
 
+		System.out.println("got mapped files");
+
 		Reducer<Map<String, List<Time>>> reducer = new Reducer<>(files.size());
 		reducer.setInputs(mapedFiles);
 		reducer.runReduce(reduce);
 		Map<String, List<Time>> output = reducer.getOutput();
 
-//		System.out.println("FINAL VAL: " + r.getOutput());
-//		r.destory();
-		
-//		Sharder<String, File> s = new Sharder<>("/Users/itamarlevy-or/fileShardTest");
-//		s.runShard(fileShard);
-//		List<File> fileOut = s.getOutputs();
-//		for(File f: fileOut)
-//			System.out.println(f);
+		storeTimes(outputFile, output);
 
-		Map<String, List<Time>> mapTest = new HashMap<String, List<Time>>();
-		List<Time> times1 = new ArrayList<Time>();
-		times1.add(new Time(new File("win"), 1.1, 1.11));
-		List<Time> times2 = new ArrayList<Time>();
-		times2.add(new Time(new File("another"),2.1, 2.11));
-		times2.add(new Time(new File("one"),2.2, 2.21));
-		List<Time> times3 = new ArrayList<Time>();
-		times3.add(new Time(new File("D"),3.1, 3.11));
-		times3.add(new Time(new File("J"),3.2, 3.21));
-		times3.add(new Time(new File("Khaled"),3.3, 3.31));
-		List<Time> times4 = new ArrayList<Time>();
-		times4.add(new Time(new File("we"),4.1, 4.11));
-		times4.add(new Time(new File("da"),4.2, 4.21));
-		times4.add(new Time(new File("best"),4.3, 4.31));
-		times4.add(new Time(new File("music"),4.4, 4.41));
-		mapTest.put("hella", times1);
-		mapTest.put("baller", times2);
-		mapTest.put("dot", times3);
-		mapTest.put("io", times4);
-		
-		storeTimes("/Users/itamarlevy-or/mapTest", mapTest);
-		
 		// FFMPegWrapper.convertVideosToAudio(new
 		// File("/home/kyle/Documents/ObamaData/A_Bold_New_Course_for_NASA.mp4"));
 
