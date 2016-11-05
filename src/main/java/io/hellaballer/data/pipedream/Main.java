@@ -42,12 +42,42 @@ public class Main {
 			for(Map.Entry<String, List<Time>> entry: timeMap.entrySet()){
 				writer.write(entry.getKey() + ":\n");
 				for(Time t: entry.getValue()){
-					writer.write("\t(" + t.getStart() + ", " + t.getEnd() + ") -" + t.getVideo() + "\n");
+					writer.write("\t(" + t.getStart() + ", " + t.getEnd() + ") " + t.getVideo() + "\n");
 				}
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+	}
+	
+	public static Map<String, List<Time>> retrieveTimes(String pathName){		
+		try {
+			List<String> lines = Files.readAllLines(Paths.get(pathName));
+			Map<String, List<Time>> timeMap = new HashMap<String, List<Time>>();
+			String word = null;
+			List<Time> times = null;
+			
+			for(String str: lines){
+				if (str.endsWith(":")){
+					if (word != null){
+						timeMap.put(word, times);
+					}
+					word = str.substring(0, str.length());
+					times = new ArrayList<Time>();
+				} else {
+					double start = Double.parseDouble(str.substring(str.indexOf('(') + 1, str.indexOf(',')));
+					double end = Double.parseDouble(str.substring(str.indexOf(',') + 2, str.indexOf(')')));
+					String path = str.substring(str.indexOf(')') + 2);
+					times.add(new Time(new File(path), start, end));
+				}
+			}
+			timeMap.put(word, times);
+			return  timeMap;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
 		}
 	}
 
@@ -67,16 +97,16 @@ public class Main {
 	};
 
 	public static void main(String[] args) {
-		args = new String[] { "/home/kyle/Documents/ObamaData/test/", "/home/kyle/Documents/ObamaData/output/" };
-
-		if (args.length < 2) {
-			System.out.println("Need input folder and output folder");
-			System.exit(-1);
-		}
-
-		System.out.println("Starting...");
-
-		String videoDir = args[0];
+//		args = new String[] { "/home/kyle/Documents/ObamaData/test/", "/home/kyle/Documents/ObamaData/output/" };
+//
+//		if (args.length < 2) {
+//			System.out.println("Need input folder and output folder");
+//			System.exit(-1);
+//		}
+//
+//		System.out.println("Starting...");
+//
+//		String videoDir = args[0];
 
 		// FFMPegWrapper.concatVideos(
 		// Arrays.asList(new
@@ -86,27 +116,27 @@ public class Main {
 		//
 		// System.out.println("concat");
 		
-		FFMPegWrapper.cutVideo(new Time(new File(videoDir + "outputLonger.mp4"), 0, 2), "outputPath.mp4");
-		System.out.println("Done");
-
-		Sharder<String, File> shard = new Sharder<>(videoDir);
-
-		shard.runShard(fileShard);
-
-		List<File> files = shard.getOutputs();
-
-		shard.destroy();
-
-		Mapper<File, Map<String, List<Time>>> map = new Mapper<>(files.size());
-		map.setInputs(files);
-		map.runMap(wordMap);
-		List<Map<String, List<Time>>> mapedFiles = map.getOutputs();
-		map.destroy();
-
-		Reducer<Map<String, List<Time>>> reducer = new Reducer<>(files.size());
-		reducer.setInputs(mapedFiles);
-		reducer.runReduce(reduce);
-		Map<String, List<Time>> output = reducer.getOutput();
+//		FFMPegWrapper.cutVideo(new Time(new File(videoDir + "outputLonger.mp4"), 0, 2), "outputPath.mp4");
+//		System.out.println("Done");
+//
+//		Sharder<String, File> shard = new Sharder<>(videoDir);
+//
+//		shard.runShard(fileShard);
+//
+//		List<File> files = shard.getOutputs();
+//
+//		shard.destroy();
+//
+//		Mapper<File, Map<String, List<Time>>> map = new Mapper<>(files.size());
+//		map.setInputs(files);
+//		map.runMap(wordMap);
+//		List<Map<String, List<Time>>> mapedFiles = map.getOutputs();
+//		map.destroy();
+//
+//		Reducer<Map<String, List<Time>>> reducer = new Reducer<>(files.size());
+//		reducer.setInputs(mapedFiles);
+//		reducer.runReduce(reduce);
+//		Map<String, List<Time>> output = reducer.getOutput();
 
 //		System.out.println("FINAL VAL: " + r.getOutput());
 //		r.destory();
@@ -139,10 +169,14 @@ public class Main {
 		
 		storeTimes("/Users/itamarlevy-or/mapTest", mapTest);
 		
+		Map<String, List<Time>> testMap = retrieveTimes("/Users/itamarlevy-or/mapTest");
+		
+		storeTimes("/Users/itamarlevy-or/mapTest2", testMap);
+		
 		// FFMPegWrapper.convertVideosToAudio(new
 		// File("/home/kyle/Documents/ObamaData/A_Bold_New_Course_for_NASA.mp4"));
 
-		System.out.println(output);
+	//	System.out.println(output);
 
 	}
 
