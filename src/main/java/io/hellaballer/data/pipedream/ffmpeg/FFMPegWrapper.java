@@ -3,6 +3,8 @@ package io.hellaballer.data.pipedream.ffmpeg;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.List;
+import java.util.StringJoiner;
 
 import io.hellaballer.data.pipedream.speech.Time;
 
@@ -43,6 +45,27 @@ public class FFMPegWrapper {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static File concatVideos(List<File> videos, String outputString) {
+		// ffmpeg -i "concat:output.mp4|output2.mp4" -c copy concat.mp4
+		StringJoiner sj = new StringJoiner("|");
+
+		for (File video : videos) {
+			sj.add(video.getAbsolutePath());
+		}
+
+		Process p;
+		try {
+			String[] execStr = new String[] { "ffmpeg", "-i", "concat:" + sj.toString(), "-c", "copy", outputString };
+			p = Runtime.getRuntime().exec(execStr);
+			p.waitFor();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		return new File(outputString);
 	}
 
 	public static String convertSecsToTimeString(double timeInput) {

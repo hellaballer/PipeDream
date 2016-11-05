@@ -2,6 +2,7 @@ package io.hellaballer.data.pipedream;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,10 +45,10 @@ public class Main {
 	};
 
 	public static void main(String[] args) {
-		args = new String[] { "/home/kyle/Documents/ObamaData/test/" };
-		
-		if (args.length < 1) {
-			System.out.println("Need input folder");
+		args = new String[] { "/home/kyle/Documents/ObamaData/test/", "/home/kyle/Documents/ObamaData/output/" };
+
+		if (args.length < 2) {
+			System.out.println("Need input folder and output folder");
 			System.exit(-1);
 		}
 
@@ -55,6 +56,14 @@ public class Main {
 
 		String videoDir = args[0];
 
+		// FFMPegWrapper.concatVideos(
+		// Arrays.asList(new
+		// File("/home/kyle/Documents/ObamaData/test/A_Bold_New_Course_for_NASA.mp4"),
+		// new File("/home/kyle/Documents/ObamaData/test/outputLonger.mp4")),
+		// "/home/kyle/Documents/ObamaData/test/out.mp4");
+		//
+		// System.out.println("concat");
+		
 		FFMPegWrapper.cutVideo(new Time(new File(videoDir + "outputLonger.mp4"), 0, 2), "outputPath.mp4");
 		System.out.println("Done");
 
