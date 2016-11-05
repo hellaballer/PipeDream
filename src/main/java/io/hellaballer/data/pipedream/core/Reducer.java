@@ -45,7 +45,7 @@ public class Reducer<A> {
 			intermediate.clear();
 			A esgrowElem = null;
 			if (inputs.size() % 2 != 0) {
-				esgrowElem = inputs.remove(0);
+				esgrowElem = inputs.remove(inputs.size() - 1);
 			}
 
 			for (int i = 0; i < inputs.size(); i += 2) {
