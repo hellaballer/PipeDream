@@ -1,12 +1,10 @@
 package io.hellaballer.data.pipedream;
 
-import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import io.hellaballer.data.pipedream.ffmpeg.FFMPegWrapper;
 
 public class Main {
 
@@ -14,6 +12,16 @@ public class Main {
 
 	public static void main(String[] args) {
 		System.out.println("Starting...");
+
+		Sharder<Integer, Integer> sharder = new Sharder<Integer, Integer>(500);
+
+		sharder.runShard(e -> Arrays.asList(e / 3, e / 3, e / 3));
+
+		List<Integer> out = sharder.getOutputs();
+		sharder.destroy();
+		
+		System.out.println("Output: " + out);
+
 		int numThreads = 5;
 		Mapper<Integer, Integer> m = new Mapper<>(numThreads);
 
@@ -39,6 +47,6 @@ public class Main {
 		System.out.println("FINAL VAL " + r.getOutput());
 		r.destory();
 
-		FFMPegWrapper.convertVideosToAudio(new File("/home/kyle/Documents/ObamaData/A_Bold_New_Course_for_NASA.mp4"));
+//		FFMPegWrapper.convertVideosToAudio(new File("/home/kyle/Documents/ObamaData/A_Bold_New_Course_for_NASA.mp4"));
 	}
 }
