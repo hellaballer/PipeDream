@@ -1,4 +1,4 @@
-package io.hellaballer.data.pipedream;
+package io.hellaballer.data.pipedream.core;
 
 import java.util.ArrayList;
 import java.util.List;

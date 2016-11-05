@@ -1,10 +1,18 @@
 package io.hellaballer.data.pipedream;
 
-import java.util.ArrayList;
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import io.hellaballer.data.pipedream.core.Mapper;
+import io.hellaballer.data.pipedream.core.Reducer;
+import io.hellaballer.data.pipedream.core.Sharder;
+import io.hellaballer.data.pipedream.ffmpeg.FFMPegWrapper;
+import io.hellaballer.data.pipedream.speech.BluMixSpeechRunner;
+import io.hellaballer.data.pipedream.speech.Time;
 
 public class Main {
 
@@ -13,19 +21,23 @@ public class Main {
 	public static void main(String[] args) {
 		System.out.println("Starting...");
 
-		Sharder<Double, Double> sharder = new Sharder<>(500.0);
+		Map<String, List<Time>> timeMap = BluMixSpeechRunner.getTimings(
+				new File("/home/kyle/code/java/eclipse-gifmaker-experimental/SampleGifMaker/splice/outputLonger.wav"));
+		System.out.println(timeMap);
+
+		double input = 500;
+
+		System.out.println("INPUT: " + input);
+
+		Sharder<Double, Double> sharder = new Sharder<>(input);
 
 		sharder.runShard(e -> Arrays.asList(e / 3, e / 3, e / 3));
 
 		List<Double> out = sharder.getOutputs();
 		sharder.destroy();
 
-		System.out.println("Output: " + out);
-
 		int numThreads = out.size();
 		Mapper<Double, Double> m = new Mapper<>(numThreads);
-
-		System.out.println("In:  " + out);
 
 		m.setInputs(out);
 
@@ -39,7 +51,7 @@ public class Main {
 
 		r.runReduce((a, b) -> a + b);
 
-		System.out.println("FINAL VAL " + r.getOutput());
+		System.out.println("FINAL VAL: " + r.getOutput());
 		r.destory();
 
 		// FFMPegWrapper.convertVideosToAudio(new
