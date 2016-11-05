@@ -8,13 +8,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.io.File;
 
 import io.hellaballer.data.pipedream.core.Mapper;
 import io.hellaballer.data.pipedream.core.Reducer;
@@ -25,17 +24,15 @@ import io.hellaballer.data.pipedream.speech.Time;
 
 public class Main {
 
-	ExecutorService executor = Executors.newFixedThreadPool(5);
-	
-	static Function <String, List<File>> fileShard = e -> {
-		File[] files =  new File(e).listFiles();
-		ArrayList<File> fileList = new ArrayList<File>();
-		for (File f: files){
-			if(f.toString().endsWith(".mp4")){
+	static Function<String, List<File>> fileShard = e -> {
+		File[] files = new File(e).listFiles();
+		List<File> fileList = new ArrayList<File>();
+		for (File f : files) {
+			if (f.toString().endsWith(".mp4")) {
 				fileList.add(f);
 			}
 		}
-		return fileList;	
+		return fileList;
 	};
 	
 	public static void storeTimes(String pathName, Map<String, List<Time>> timeMap){
@@ -44,7 +41,7 @@ public class Main {
 			for(Map.Entry<String, List<Time>> entry: timeMap.entrySet()){
 				writer.write(entry.getKey() + ":\n");
 				for(Time t: entry.getValue()){
-					writer.write("\t(" + t.getStart() + ", " + t.getEnd() + ")\n");
+					writer.write("\t(" + t.getStart() + ", " + t.getEnd() + ") -" + t.getVideo() + "\n");
 				}
 			}
 		} catch (IOException e) {
@@ -52,45 +49,58 @@ public class Main {
 			e.printStackTrace();
 		}
 	}
-	
+
+	static Function<File, Map<String, List<Time>>> wordMap = video -> {
+		Map<String, List<Time>> map;
+		File audio = FFMPegWrapper.convertVideosToAudio(video);
+		map = BluMixSpeechRunner.getTimings(video, audio);
+		return map;
+	};
+
+	static BiFunction<Map<String, List<Time>>, Map<String, List<Time>>, Map<String, List<Time>>> reduce = (map1,
+			map2) -> {
+		Map<String, List<Time>> newMap = new HashMap<>();
+		newMap.putAll(map1);
+		newMap.putAll(map2);
+		return newMap;
+	};
+
 	public static void main(String[] args) {
+		args = new String[] { "/home/kyle/Documents/ObamaData/test/" };
+		
+		if (args.length < 1) {
+			System.out.println("Need input folder");
+			System.exit(-1);
+		}
+
 		System.out.println("Starting...");
 
-//		Map<String, List<Time>> timeMap = BluMixSpeechRunner.getTimings(
-//				new File("/home/kyle/code/java/eclipse-gifmaker-experimental/SampleGifMaker/splice/outputLonger.wav"));
-//		System.out.println(timeMap);
-		
-		
+		String videoDir = args[0];
 
-		double input = 500;
+		FFMPegWrapper.cutVideo(new Time(new File(videoDir + "outputLonger.mp4"), 0, 2), "outputPath.mp4");
+		System.out.println("Done");
 
-		System.out.println("INPUT: " + input);
+		Sharder<String, File> shard = new Sharder<>(videoDir);
 
-		Sharder<Double, Double> sharder = new Sharder<>(input);
+		shard.runShard(fileShard);
 
-		sharder.runShard(e -> Arrays.asList(e / 3, e / 3, e / 3));
+		List<File> files = shard.getOutputs();
 
-		List<Double> out = sharder.getOutputs();
-		
-		sharder.destroy();
+		shard.destroy();
 
-		int numThreads = out.size();
-		Mapper<Double, Double> m = new Mapper<>(numThreads);
+		Mapper<File, Map<String, List<Time>>> map = new Mapper<>(files.size());
+		map.setInputs(files);
+		map.runMap(wordMap);
+		List<Map<String, List<Time>>> mapedFiles = map.getOutputs();
+		map.destroy();
 
-		m.setInputs(out);
+		Reducer<Map<String, List<Time>>> reducer = new Reducer<>(files.size());
+		reducer.setInputs(mapedFiles);
+		reducer.runReduce(reduce);
+		Map<String, List<Time>> output = reducer.getOutput();
 
-		m.runMap(e -> e * 2);
-
-		Reducer<Double> r = new Reducer<>(numThreads);
-
-		r.setInputs(m.getOutputs());
-
-		m.destroy();
-
-		r.runReduce((a, b) -> a + b);
-
-		System.out.println("FINAL VAL: " + r.getOutput());
-		r.destory();
+//		System.out.println("FINAL VAL: " + r.getOutput());
+//		r.destory();
 		
 //		Sharder<String, File> s = new Sharder<>("/Users/itamarlevy-or/fileShardTest");
 //		s.runShard(fileShard);
@@ -100,19 +110,19 @@ public class Main {
 
 		Map<String, List<Time>> mapTest = new HashMap<String, List<Time>>();
 		List<Time> times1 = new ArrayList<Time>();
-		times1.add(new Time(1.1, 1.11));
+		times1.add(new Time(new File("win"), 1.1, 1.11));
 		List<Time> times2 = new ArrayList<Time>();
-		times2.add(new Time(2.1, 2.11));
-		times2.add(new Time(2.2, 2.21));
+		times2.add(new Time(new File("another"),2.1, 2.11));
+		times2.add(new Time(new File("one"),2.2, 2.21));
 		List<Time> times3 = new ArrayList<Time>();
-		times3.add(new Time(3.1, 3.11));
-		times3.add(new Time(3.2, 3.21));
-		times3.add(new Time(3.3, 3.31));
+		times3.add(new Time(new File("D"),3.1, 3.11));
+		times3.add(new Time(new File("J"),3.2, 3.21));
+		times3.add(new Time(new File("Khaled"),3.3, 3.31));
 		List<Time> times4 = new ArrayList<Time>();
-		times4.add(new Time(4.1, 4.11));
-		times4.add(new Time(4.2, 4.21));
-		times4.add(new Time(4.3, 4.31));
-		times4.add(new Time(4.4, 4.41));
+		times4.add(new Time(new File("we"),4.1, 4.11));
+		times4.add(new Time(new File("da"),4.2, 4.21));
+		times4.add(new Time(new File("best"),4.3, 4.31));
+		times4.add(new Time(new File("music"),4.4, 4.41));
 		mapTest.put("hella", times1);
 		mapTest.put("baller", times2);
 		mapTest.put("dot", times3);
@@ -122,5 +132,53 @@ public class Main {
 		
 		// FFMPegWrapper.convertVideosToAudio(new
 		// File("/home/kyle/Documents/ObamaData/A_Bold_New_Course_for_NASA.mp4"));
+
+		System.out.println(output);
+
 	}
+
+	// Map<String, List<Time>> timeMap = BluMixSpeechRunner.getTimings(null,
+	// new
+	// File("/home/kyle/code/java/eclipse-gifmaker-experimental/SampleGifMaker/splice/outputLonger.wav"));
+	// System.out.println(timeMap);
+	//
+	// double input = 500;
+	//
+	// System.out.println("INPUT: " + input);
+	//
+	// Sharder<Double, Double> sharder = new Sharder<>(input);
+	//
+	// sharder.runShard(e -> Arrays.asList(e / 3, e / 3, e / 3));
+	//
+	// List<Double> out = sharder.getOutputs();
+	//
+	// sharder.destroy();
+	//
+	// int numThreads = out.size();
+	// Mapper<Double, Double> m = new Mapper<>(numThreads);
+	//
+	// m.setInputs(out);
+	//
+	// m.runMap(e -> e * 2);
+	//
+	// Reducer<Double> r = new Reducer<>(numThreads);
+	//
+	// r.setInputs(m.getOutputs());
+	//
+	// m.destroy();
+	//
+	// r.runReduce((a, b) -> a + b);
+	//
+	// System.out.println("FINAL VAL: " + r.getOutput());
+	// r.destory();
+	//
+	// Sharder<String, File> s = new
+	// Sharder<>("/Users/itamarlevy-or/fileShardTest");
+	// s.runShard(fileShard);
+	// List<File> fileOut = s.getOutputs();
+	// for (File f : fileOut)
+	// System.out.println(f);
+	//
+	// FFMPegWrapper.convertVideosToAudio(new
+	// File("/home/kyle/Documents/ObamaData/A_Bold_New_Course_for_NASA.mp4"));
 }

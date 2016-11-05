@@ -16,7 +16,7 @@ import com.ibm.watson.developer_cloud.speech_to_text.v1.model.Transcript;
 
 public class BluMixSpeechRunner {
 
-	public static Map<String, List<Time>> getTimings(File wavInput) {
+	public static Map<String, List<Time>> getTimings(File origMp4, File wavInput) {
 		Map<String, List<Time>> map = new HashMap<>();
 		SpeechToText service = new SpeechToText();
 		service.setUsernameAndPassword("7d7bce45-a04b-47ce-8ea6-517bd1ae017d", "0qbUa1eU4hOY");
@@ -28,10 +28,10 @@ public class BluMixSpeechRunner {
 			SpeechAlternative alt = result.getAlternatives().get(0);
 			for (SpeechTimestamp ts : alt.getTimestamps()) {
 				if (map.containsKey(ts.getWord())) {
-					map.get(ts.getWord()).add(new Time(ts.getStartTime(), ts.getEndTime()));
+					map.get(ts.getWord()).add(new Time(origMp4, ts.getStartTime(), ts.getEndTime()));
 				} else {
 					List<Time> lst = new ArrayList<>();
-					lst.add(new Time(ts.getStartTime(), ts.getEndTime()));
+					lst.add(new Time(origMp4, ts.getStartTime(), ts.getEndTime()));
 					map.put(ts.getWord(), lst);
 				}
 			}
