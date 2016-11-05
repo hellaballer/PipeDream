@@ -63,7 +63,7 @@ public class Main {
 					if (word != null){
 						timeMap.put(word, times);
 					}
-					word = str.substring(0, str.length());
+					word = str.substring(0, str.length() - 1);
 					times = new ArrayList<Time>();
 				} else {
 					double start = Double.parseDouble(str.substring(str.indexOf('(') + 1, str.indexOf(',')));
