@@ -10,9 +10,9 @@ public class Main {
 	ExecutorService executor = Executors.newFixedThreadPool(5);
 
 	public static void main(String[] args) {
-		System.out.println("Hello");
+		System.out.println("Starting...");
 		int numThreads = 5;
-		Mapper<Integer, Integer > m = new Mapper<>(numThreads);
+		Mapper<Integer, Integer> m = new Mapper<>(numThreads);
 
 		List<Integer> inputs = new ArrayList<>(numThreads);
 		for (int i = 0; i < numThreads; i++) {
@@ -25,7 +25,15 @@ public class Main {
 
 		m.runMap(e -> e * 2);
 
-		System.out.println("Out: " + m.getOutputs());
+		Reducer<Integer> r = new Reducer<>(numThreads);
 
+		r.setInputs(m.getOutputs());
+		
+		m.destroy();
+
+		r.runReduce((a, b) -> a + b);
+
+		System.out.println("FINAL VAL " + r.getOutput());
+		r.destory();
 	}
 }

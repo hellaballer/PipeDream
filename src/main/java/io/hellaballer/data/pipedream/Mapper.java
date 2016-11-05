@@ -29,6 +29,10 @@ public class Mapper<A, B> {
 		}
 	}
 
+	public void destroy() {
+		executor.shutdown();
+	}
+
 	public void setInputs(List<A> inputs) {
 		int i = 0;
 		for (A elem : inputs) {
@@ -43,13 +47,13 @@ public class Mapper<A, B> {
 			executor.execute(mapWorkerThread);
 		}
 	}
-	
+
 	public synchronized void incrementCountState() {
 		++countState;
 		if (countState >= numThreads) {
 			latch.countDown();
 		}
-	}	
+	}
 
 	public List<B> getOutputs() {
 		try {

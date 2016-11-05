@@ -14,68 +14,83 @@ public class Reducer<A> {
 
 	private final List<A> inputs;
 	private final List<A> intermediate;
-	private final A outputs;
+	private A output;
 
-	private CountDownLatch latch = new CountDownLatch(1);
-	private int numElements;
+	private CountDownLatch intermediateLatch = new CountDownLatch(1);
+	private final CountDownLatch finalLatch = new CountDownLatch(1);
 	private int countState;
 
 	public Reducer(int numThreads) {
 		this.numThreads = numThreads;
-		this.numElements = numThreads;
 		this.countState = 0;
 		this.executor = Executors.newFixedThreadPool(numThreads);
 		inputs = new ArrayList<>(numThreads);
 		intermediate = new ArrayList<>(numThreads);
-		outputs = null;
-		for (int i = 0; i < numThreads; ++i) {
-			inputs.add(null);
-			intermediate.add(null);
-		}
+		output = null;
+	}
+
+	public void destory() {
+		executor.shutdown();
 	}
 
 	public void setInputs(List<A> inputs) {
-		int i = 0;
-		for (A elem : inputs) {
-			this.inputs.set(i, elem);
-			++i;
+		if (inputs.size() != numThreads) {
+			throw new IllegalArgumentException("Inputs need to match numThreads");
 		}
+		this.inputs.addAll(inputs);
 	}
 
 	public void runReduce(BiFunction<A, A, A> reduceFunction) {
-		while(numElements > 1) {
-			for (int i = 0; i < this.numThreads; ++i) {
-				MapWorkerThread<A, B> mapWorkerThread = new MapWorkerThread<>(mapFunction, inputs.get(i), outputs, i, this);
-				executor.execute(mapWorkerThread);
+		while (inputs.size() > 1) {
+			intermediate.clear();
+			A esgrowElem = null;
+			if (inputs.size() % 2 != 0) {
+				esgrowElem = inputs.remove(0);
 			}
+
+			for (int i = 0; i < inputs.size(); i += 2) {
+				intermediate.add(null);
+			}
+
+			for (int i = 0; i < inputs.size(); i += 2) {
+				A elem1 = inputs.get(i);
+				A elem2 = inputs.get(i + 1);
+				ReduceWorkerThread<A> reducerThread = new ReduceWorkerThread<A>(reduceFunction, elem1, elem2,
+						intermediate, i / 2, this);
+				executor.execute(reducerThread);
+			}
+			try {
+				intermediateLatch.await();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			if (esgrowElem != null) {
+				intermediate.add(esgrowElem);
+			}
+
+			intermediateLatch = new CountDownLatch(1);
+			countState = 0;
+			inputs.clear();
+			inputs.addAll(intermediate);
 		}
+		output = inputs.get(0);
+		intermediateLatch.countDown();
+		finalLatch.countDown();
 	}
-	
+
 	public synchronized void incrementCountState() {
 		++countState;
-		if (countState >= numElements) {
-			latch.countDown();
+		if (countState >= intermediate.size()) {
+			intermediateLatch.countDown();
 		}
-	}	
+	}
 
-	public List<B> getOutputs() {
+	public A getOutput() {
 		try {
-			latch.await();
+			finalLatch.await();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		return outputs;
+		return output;
 	}
-
-	// public void run(Function<A, B> funct, int numThreads) {
-	// if (numThreads > this.numThreads) {
-	// throw new IllegalArgumentException("Too many threads requested.");
-	// }
-	//
-	// for (int i = 0; i < this.numThreads; ++i) {
-	// WorkerThread<A, B> workerThread = new WorkerThread<>(funct, i);
-	// executor.execute(workerThread);
-	// }
-	// }
-
 }
