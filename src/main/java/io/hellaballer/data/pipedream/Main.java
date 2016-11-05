@@ -1,9 +1,12 @@
 package io.hellaballer.data.pipedream;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import io.hellaballer.data.pipedream.ffmpeg.FFMPegWrapper;
 
 public class Main {
 
@@ -28,12 +31,14 @@ public class Main {
 		Reducer<Integer> r = new Reducer<>(numThreads);
 
 		r.setInputs(m.getOutputs());
-		
+
 		m.destroy();
 
 		r.runReduce((a, b) -> a + b);
 
 		System.out.println("FINAL VAL " + r.getOutput());
 		r.destory();
+
+		FFMPegWrapper.convertVideosToAudio(new File("/home/kyle/Documents/ObamaData/A_Bold_New_Course_for_NASA.mp4"));
 	}
 }
